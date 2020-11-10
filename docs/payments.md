@@ -112,14 +112,18 @@ For example: if you have a customer where the frequency of an agreement is set t
   
 #### <a name="subscription-payments_callbacks"></a>Callbacks
 
-Once the payment status changes from *Pending* to *Executed, Declined, Rejected* or *Failed*, a callback will be done to the callback address, which is configurable via `PATCH /api/providers/{providerId}` with path value `/payment_status_callback_url`. The `/payment_status_callback_url` should be a HTTPS. If you try to configure it to HTTP, you will get a bad request with the following error message: "The hyperlink reference must use https scheme"
+Once the payment status changes to *Created, Executed, Declined, Rejected* or *Failed*, a callback will be done to the callback address, which is configurable via `PATCH /api/providers/{providerId}` with `path` equal to __"/payment_status_callback_url"__ and `value` equal to your callback url. The callback url should be an HTTPS. If you try to configure it to HTTP, you will get a bad request with the following error message: "The hyperlink reference must use https scheme"
+
+<div class="note">
+<b>Note</b>: Starting from XXX in order to receive callback statuses, <b>Subscriptions provider</b> must be subscribed to callbacks. More information in <a href="#subscription-payments_callbacks_subscribe">Payment status callback subscription</a> section.
+</div>
 
 We are sending callbacks in two ways:
 
-1. A batch that runs every 2 mins. It contains Subscription payments with status: Declined/Rejected/Failed/Executed/OneOff_Expired. So in theory, there is a possible delay of 2 mins.
+1. A batch that runs every 5 seconds. It contains Subscription payments with status: Declined/Rejected/Failed/Executed/OneOff_Expired. So in theory, there is a possible delay of 5 seconds.
 2. Right after the user made an action. It contains OneOff_Reserved/OneOff_Rejected.
 
-Every two minutes we take up to 1000 events (notifications about payment state), group them by merchant and make the calls. Therefore, as for merchant you should get up to 1 call every two minutes.
+Every 5 seconds we take up to 1000 events (notifications about payment state), group them by merchant and make the calls. Therefore, as for merchant you should get up to 1 call every 5 seconds.
 
 We will post the integrator or merchant a callback, and expect a HTTP 2xx response. If not we will retry 8 times.
 
@@ -136,21 +140,22 @@ We will post the integrator or merchant a callback, and expect a HTTP 2xx respon
 
 |New Status|Condition|When to expect|Callback *status*  | Callback *status_text* | Callback *status_code* |
 |----------|---------|--------------|-------------------|------------------------|------------------------|
+|Created   |_The payment was created_ | Right after creating payment request | Created | | 0
 |Executed  |_The payment was successfully executed on the due-date_| After 03:15 in the morning of the due-date |Executed  | | 0 |
 |Failed    |_Payment failed to execute during the due-date or at the end of grace period._| After 23:59 of the due-date, or the last day of grace period. |Failed    | | 50000 |
 |Rejected  |_User rejected the Pending payment in MobilePay_       | Any time during the 8-1 days period when user is presented with the Pending payment in the MobilePay activity list. |Rejected  |Rejected by user.| 50001 | 
+|Rejected  |_When the **Agreement** was canceled by user_ | Any time unless retention period is set and active. |Rejected  |Declined by system: Agreement was canceled. | 50005 | 
 |Declined  |_Merchant declined the Pending payment via the API_       | Any time during the 8-1 days period when user is presented with the Pending payment in the MobilePay activity list. |Declined  |Declined by merchant.| 50002 | 
 |Declined  |_**Agreement** is not in Active state._                | Right after the payment request was received. |Declined  |Declined by system: Agreement is not "Active" state.| 50003 | 
 |Declined  |_Another payment is already scheduled on that day for the user_| Right after the payment request was received. |Declined  |Declined by system: Another payment is already due.| 50004 | 
-|Declined  |When the **Agreement** was canceled by merchant or by system | Any time unless retention period is set and active.  |Declined  |Declined by system: Agreement was canceled. | 50005 | 
-|Rejected  |When the **Agreement** was canceled by user | Any time unless retention period is set and active. |Rejected  |Declined by system: Agreement was canceled. | 50005 | 
-|Declined  |A catch-all error code when payment was declined by core system.| Right after the payment request was received. |Declined  | Declined by system. | 50006 | 
-|Declined  |Declined due to user status.| Right after the payment request was received. |Declined  | Declined due to user status. | 50009 | 
-|Declined  |When the **Agreement** does not exist| Right after the payment request was received. |Declined  | Agreement does not exist. | 50010 |
-|Declined  |When the due date before rule is violated | Right after the payment request was received. |Declined  | Due date of the payment must be at least 1 day in the future. | 50011 |
-|Declined  |When the due date ahead rule is violated | Right after the payment request was received. |Declined  | Due date must be no more than 126 days in the future. | 50012 |
+|Declined  |_When the **Agreement** was canceled by merchant or by system_ | Any time unless retention period is set and active.  |Declined  |Declined by system: Agreement was canceled. | 50005 | 
+|Declined  |_A catch-all error code when payment was declined by core system._| Right after the payment request was received. |Declined  | Declined by system. | 50006 | 
+|Declined  |_Declined due to user status.| Right after the payment request was received._ |Declined  | Declined due to user status. | 50009 | 
+|Declined  |_When the **Agreement** does not exist| Right after the payment request was received._ |Declined  | Agreement does not exist. | 50010 |
+|Declined  |_When the due date before rule is violated | Right after the payment request was received._ |Declined  | Due date of the payment must be at least 1 day in the future. | 50011 |
+|Declined  |_When the due date ahead rule is violated | Right after the payment request was received._ |Declined  | Due date must be no more than 126 days in the future. | 50012 |
 
-#### PaymentStates
+#### Payment States
 
 ![](assets/images/PaymentStates.PNG)
 
@@ -174,7 +179,7 @@ The process on failed payments the DueDate is as follows:
 
 ##### <a name="subscription-payments_state"></a>Payment state diagram
 
-![](assets/images/Recurring_payment_states2.jpg)
+![](assets/images/Recurring_payment_states2.png)
 
 ##### <a name="subscription-payments_callback-properties"></a>Other callback properties
 
@@ -206,6 +211,31 @@ The process on failed payments the DueDate is as follows:
     }
 ]
 ```
+
+#### <a name="subscription-payments_callbacks_subscribe"></a> Payment status callback subscription
+
+Starting from XXX in order to receive payment statuses callbacks, **Subscription provider** must be subscribed to callbacks by calling `POST /api/providers/{providerId}/callbacks/payment/subscribe` and specifying what callback statuses they would like to receive. 
+
+For merchants that already had **Subscriptions product** before that date all their **Subscription providers** will be automatically subscribed to _Executed, Declined, Rejected and Failed_ events and starting from XXX no more automatic subscriptions to callbacks will be performed.
+
+##### Set payment callback subscription request body example
+```json
+{
+    "provider_id" : "1b08e244-4aea-4988-99d6-1bd22c6a5b2c",
+    "statuses" : ["Created", "Executed", "Declined", "Rejected", "Failed"]
+}
+```
+
+To get the list of payment statuses for which the subscription provider has subscribed to, call `GET /api/providers/{providerId}/callbacks/payment`.
+
+##### Get payment callback subscription response body example
+```json
+{
+    "statuses" : ["Created", "Executed", "Declined", "Rejected", "Failed"]
+}
+```
+
+
 #### <a name="subscriptionpayments_usernotifications"></a> User notifications
 
 As a MobilePay app user, the user can be informed about payment issues, depending on how the user has configured their Push Notification settings.  Push Notifications window: 08:30 - 22:00 DK time. We send push notifications to customers smartphone. When a payment requires additional steps, such as customer authentication or exchange of card, the customer will be notified via push notifications. Upon receiving the push notification, the customer is prompted to complete the required action.
