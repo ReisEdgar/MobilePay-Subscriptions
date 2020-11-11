@@ -216,6 +216,10 @@ The process on failed payments the DueDate is as follows:
 
 Starting from 1st February 2021 onwards in order to receive payment statuses callbacks, **Subscription provider** must be subscribed to callbacks by calling `POST /api/providers/{providerId}/callbacks/payment/subscribe` and specifying what callback statuses they would like to receive. 
 
+<div class="note">
+    <b>Prerequisite</b>: <br /> Payment status <a href="#subscription-payments_callbacks">callback</a> url must be set before using this endpoint.
+</div>
+
 For merchants that already had **Subscriptions product** before that date all their **Subscription providers** will be automatically subscribed to _Executed, Declined, Rejected and Failed_ events and starting from 1st February 2021 no more automatic subscriptions to callbacks will be performed.
 
 ##### Set payment callback subscription request body example
