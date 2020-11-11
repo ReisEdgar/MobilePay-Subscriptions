@@ -115,7 +115,7 @@ For example: if you have a customer where the frequency of an agreement is set t
 Once the payment status changes to *Created, Executed, Declined, Rejected* or *Failed*, a callback will be done to the callback address, which is configurable via `PATCH /api/providers/{providerId}` with `path` equal to __"/payment_status_callback_url"__ and `value` equal to your callback url. The callback url should be an HTTPS. If you try to configure it to HTTP, you will get a bad request with the following error message: "The hyperlink reference must use https scheme"
 
 <div class="note">
-<b>Note</b>: Starting from XXX in order to receive callback statuses, <b>Subscriptions provider</b> must be subscribed to callbacks. More information in <a href="#subscription-payments_callbacks_subscribe">Payment status callback subscription</a> section.
+<b>Note</b>: Starting from 1st February 2021 onwards in order to receive callback statuses, <b>Subscription provider</b> must be subscribed to callbacks. More information in <a href="#subscription-payments_callbacks_subscribe">Payment status callback subscription</a> section.
 </div>
 
 We are sending callbacks in two ways:
@@ -214,9 +214,9 @@ The process on failed payments the DueDate is as follows:
 
 #### <a name="subscription-payments_callbacks_subscribe"></a> Payment status callback subscription
 
-Starting from XXX in order to receive payment statuses callbacks, **Subscription provider** must be subscribed to callbacks by calling `POST /api/providers/{providerId}/callbacks/payment/subscribe` and specifying what callback statuses they would like to receive. 
+Starting from 1st February 2021 onwards in order to receive payment statuses callbacks, **Subscription provider** must be subscribed to callbacks by calling `POST /api/providers/{providerId}/callbacks/payment/subscribe` and specifying what callback statuses they would like to receive. 
 
-For merchants that already had **Subscriptions product** before that date all their **Subscription providers** will be automatically subscribed to _Executed, Declined, Rejected and Failed_ events and starting from XXX no more automatic subscriptions to callbacks will be performed.
+For merchants that already had **Subscriptions product** before that date all their **Subscription providers** will be automatically subscribed to _Executed, Declined, Rejected and Failed_ events and starting from 1st February 2021 no more automatic subscriptions to callbacks will be performed.
 
 ##### Set payment callback subscription request body example
 ```json

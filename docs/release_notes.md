@@ -1,4 +1,7 @@
 # Subscriptions API Release Notes
+<div class='post-date'>01 February 2021 - Payment callback subscriptions</div> 
+Starting from 1st February 2021 onwards in order to receive callback statuses, <b>Subscription provider</b> must be subscribed to callbacks. More information in <a href="payments#subscription-payments_callbacks_subscribe">Payment status callback subscription</a> section.
+
 <div class='post-date'>04 November 2020 - Invoice fields</div> 
 Merchants can add [invoice](invoice) for susbscription payments without user's information.
 Properties that are now optional: consumer_name, consumer_phone_number, consumer_address_lines.
